@@ -480,6 +480,8 @@ load("sea_lion_deltamax_studyM=100.Rda")
 
 library(ggplot2)
 library(dplyr)
+library(viridis)
+library(RColorBrewer)
 #beta1
 z <- qnorm(0.95)  # 90% interval
 summarise_gauss <- function(df, label) {
@@ -503,18 +505,26 @@ sum100 <- summarise_gauss(df100, "M=100")
 
 sum_all <- bind_rows(sum25, sum50, sum100)
 
+
 ggplot() +
-  geom_point(data = df25,  aes(delta_max, beta1, color = "M=25"),  alpha = 0.1) +
-  geom_point(data = df50,  aes(delta_max, beta1, color = "M=50"),  alpha = 0.1) +
-  geom_point(data = df100, aes(delta_max, beta1, color = "M=100"), alpha = 0.1) +
-  #geom_ribbon(data = sum_all, aes(x = delta_max, ymin = lo, ymax = hi, fill = M, group = M), alpha = 0.15, colour = NA) +
-  geom_line(data = sum_all, aes(delta_max, mu, color = M)) +
-  #geom_line(data = sum_all, aes(delta_max, lo, color = M), linetype = "dashed") +
-  #geom_line(data = sum_all, aes(delta_max, hi, color = M), linetype = "dashed") +
-  
+  geom_point(data = df25,  aes(delta_max, beta1, color = "M=25"),  alpha = 0.15) +
+  geom_point(data = df50,  aes(delta_max, beta1, color = "M=50"),  alpha = 0.15) +
+  geom_point(data = df100, aes(delta_max, beta1, color = "M=100"), alpha = 0.15) +
+  geom_line(
+    data = sum_all,
+    aes(delta_max, mu, color = M, linetype = M),
+    linewidth = 0.7) +
   scale_x_log10() +
-  labs(x = expression(Delta[max]), y = expression(beta[1]), color = NULL) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    x = expression(Delta[max]),
+    y = expression(beta[1]),
+    color = NULL,
+    shape = NULL,
+    linetype = NULL
+  ) +
   theme_bw()
+
 
 
 
@@ -543,15 +553,15 @@ sum100 <- summarise_gauss(df100, "M=100")
 sum_all <- bind_rows(sum25, sum50, sum100)
 
 ggplot() +
-  geom_point(data = df25,  aes(delta_max, beta2, color = "M=25"),  alpha = 0.1) +
-  geom_point(data = df50,  aes(delta_max, beta2, color = "M=50"),  alpha = 0.1) +
-  geom_point(data = df100, aes(delta_max, beta2, color = "M=100"), alpha = 0.1) +
-  #geom_ribbon(data = sum_all, aes(x = delta_max, ymin = lo, ymax = hi, fill = M, group = M), alpha = 0.15, colour = NA) +
-  geom_line(data = sum_all, aes(delta_max, mu, color = M)) +
-  #geom_line(data = sum_all, aes(delta_max, lo, color = M), linetype = "dashed") +
-  #geom_line(data = sum_all, aes(delta_max, hi, color = M), linetype = "dashed") +
-  
+  geom_point(data = df25,  aes(delta_max, beta2, color = "M=25"),  alpha = 0.15) +
+  geom_point(data = df50,  aes(delta_max, beta2, color = "M=50"),  alpha = 0.15) +
+  geom_point(data = df100, aes(delta_max, beta2, color = "M=100"), alpha = 0.15) +
+  geom_line(
+    data = sum_all,
+    aes(delta_max, mu, color = M, linetype = M),
+    linewidth = 0.7) +
   scale_x_log10() +
+  scale_color_brewer(palette = "Dark2") +
   labs(x = expression(Delta[max]), y = expression(beta[2]), color = NULL) +
   theme_bw()
 
@@ -582,15 +592,15 @@ sum100 <- summarise_gauss(df100, "M=100")
 sum_all <- bind_rows(sum25, sum50, sum100)
 
 ggplot() +
-  geom_point(data = df25,  aes(delta_max, beta3, color = "M=25"),  alpha = 0.1) +
-  geom_point(data = df50,  aes(delta_max, beta3, color = "M=50"),  alpha = 0.1) +
-  geom_point(data = df100, aes(delta_max, beta3, color = "M=100"), alpha = 0.1) +
-  #geom_ribbon(data = sum_all, aes(x = delta_max, ymin = lo, ymax = hi, fill = M, group = M), alpha = 0.15, colour = NA) +
-  geom_line(data = sum_all, aes(delta_max, mu, color = M)) +
-  #geom_line(data = sum_all, aes(delta_max, lo, color = M), linetype = "dashed") +
-  #geom_line(data = sum_all, aes(delta_max, hi, color = M), linetype = "dashed") +
-  
+  geom_point(data = df25,  aes(delta_max, beta3, color = "M=25"),  alpha = 0.15) +
+  geom_point(data = df50,  aes(delta_max, beta3, color = "M=50"),  alpha = 0.15) +
+  geom_point(data = df100, aes(delta_max, beta3, color = "M=100"), alpha = 0.15) +
+  geom_line(
+    data = sum_all,
+    aes(delta_max, mu, color = M, linetype = M),
+    linewidth = 0.7) +
   scale_x_log10() +
+  scale_color_brewer(palette = "Dark2") +
   labs(x = expression(Delta[max]), y = expression(beta[3]), color = NULL) +
   theme_bw()
 
@@ -621,15 +631,15 @@ sum100 <- summarise_gauss(df100, "M=100")
 sum_all <- bind_rows(sum25, sum50, sum100)
 
 ggplot() +
-  geom_point(data = df25,  aes(delta_max, beta4, color = "M=25"),  alpha = 0.1) +
-  geom_point(data = df50,  aes(delta_max, beta4, color = "M=50"),  alpha = 0.1) +
-  geom_point(data = df100, aes(delta_max, beta4, color = "M=100"), alpha = 0.1) +
-  #geom_ribbon(data = sum_all, aes(x = delta_max, ymin = lo, ymax = hi, fill = M, group = M), alpha = 0.15, colour = NA) +
-  geom_line(data = sum_all, aes(delta_max, mu, color = M)) +
-  #geom_line(data = sum_all, aes(delta_max, lo, color = M), linetype = "dashed") +
-  #geom_line(data = sum_all, aes(delta_max, hi, color = M), linetype = "dashed") +
-  
+  geom_point(data = df25,  aes(delta_max, beta4, color = "M=25"),  alpha = 0.15) +
+  geom_point(data = df50,  aes(delta_max, beta4, color = "M=50"),  alpha = 0.15) +
+  geom_point(data = df100, aes(delta_max, beta4, color = "M=100"), alpha = 0.15) +
+  geom_line(
+    data = sum_all,
+    aes(delta_max, mu, color = M, linetype = M),
+    linewidth = 0.7) +
   scale_x_log10() +
+  scale_color_brewer(palette = "Dark2") +
   labs(x = expression(Delta[max]), y = expression(beta[4]), color = NULL) +
   theme_bw()
 
@@ -659,15 +669,15 @@ sum100 <- summarise_gauss(df100, "M=100")
 sum_all <- bind_rows(sum25, sum50, sum100)
 
 ggplot() +
-  geom_point(data = df25,  aes(delta_max, gammasq, color = "M=25"),  alpha = 0.1) +
-  geom_point(data = df50,  aes(delta_max, gammasq, color = "M=50"),  alpha = 0.1) +
-  geom_point(data = df100, aes(delta_max, gammasq, color = "M=100"), alpha = 0.1) +
-  #geom_ribbon(data = sum_all, aes(x = delta_max, ymin = lo, ymax = hi, fill = M, group = M), alpha = 0.15, colour = NA) +
-  geom_line(data = sum_all, aes(delta_max, mu, color = M)) +
-  #geom_line(data = sum_all, aes(delta_max, lo, color = M), linetype = "dashed") +
-  #geom_line(data = sum_all, aes(delta_max, hi, color = M), linetype = "dashed") +
-  
+  geom_point(data = df25,  aes(delta_max, gammasq, color = "M=25"),  alpha = 0.15) +
+  geom_point(data = df50,  aes(delta_max, gammasq, color = "M=50"),  alpha = 0.15) +
+  geom_point(data = df100, aes(delta_max, gammasq, color = "M=100"), alpha = 0.15) +
+  geom_line(
+    data = sum_all,
+    aes(delta_max, mu, color = M, linetype = M),
+    linewidth = 0.7) +
   scale_x_log10() +
+  scale_color_brewer(palette = "Dark2") +
   labs(x = expression(Delta[max]), y = expression(gamma^2), color = NULL) +
   theme_bw()
 
