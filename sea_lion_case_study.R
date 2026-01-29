@@ -562,7 +562,7 @@ ggplot() +
     linewidth = 0.7) +
   scale_x_log10() +
   scale_color_brewer(palette = "Dark2") +
-  labs(x = expression(Delta[max]), y = expression(beta[2]), color = NULL) +
+  labs(x = expression(Delta[max]), y = expression(beta[2]), color = NULL, shape = NULL, linetype = NULL) +
   theme_bw()
 
 
@@ -601,7 +601,7 @@ ggplot() +
     linewidth = 0.7) +
   scale_x_log10() +
   scale_color_brewer(palette = "Dark2") +
-  labs(x = expression(Delta[max]), y = expression(beta[3]), color = NULL) +
+  labs(x = expression(Delta[max]), y = expression(beta[3]), color = NULL, shape = NULL, linetype = NULL) +
   theme_bw()
 
 
@@ -640,7 +640,7 @@ ggplot() +
     linewidth = 0.7) +
   scale_x_log10() +
   scale_color_brewer(palette = "Dark2") +
-  labs(x = expression(Delta[max]), y = expression(beta[4]), color = NULL) +
+  labs(x = expression(Delta[max]), y = expression(beta[4]), color = NULL, shape = NULL, linetype = NULL) +
   theme_bw()
 
 
@@ -678,7 +678,7 @@ ggplot() +
     linewidth = 0.7) +
   scale_x_log10() +
   scale_color_brewer(palette = "Dark2") +
-  labs(x = expression(Delta[max]), y = expression(gamma^2), color = NULL) +
+  labs(x = expression(Delta[max]), y = expression(gamma^2), color = NULL, shape = NULL, linetype = NULL) +
   theme_bw()
 
 
