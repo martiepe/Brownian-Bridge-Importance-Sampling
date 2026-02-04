@@ -24,7 +24,7 @@ ggplot(df, aes(x = M, y = time)) +
     x = "M"
   ) +
   scale_y_log10() +
-  theme_bw()
+  theme_bw(base_size = 14)
 
 
 
@@ -50,7 +50,7 @@ ggplot(df, aes(x = N, y = time)) +
     x = "N"
   ) +
   scale_y_log10() +
-  theme_bw()
+  theme_bw(base_size = 14)
 
 
 
@@ -75,7 +75,7 @@ ggplot(df, aes(x = dt, y = time)) +
     x = expression(Delta[t])
   ) +
   scale_y_log10() +
-  theme_bw()
+  theme_bw(base_size = 14)
 
 
 
@@ -101,4 +101,4 @@ ggplot(df, aes(x = dt, y = time)) +
     x = expression(Delta[t])
   ) +
   scale_y_log10() +
-  theme_bw()
+  theme_bw(base_size = 14)
