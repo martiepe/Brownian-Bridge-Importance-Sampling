@@ -46,7 +46,7 @@ nrefits <- 10
 # number of pars 
 npar <- nlyr(hbfull) + 1
 # add 1 column to track dt_max
-params <- matrix(NA, ncol = npar + 1, nrow = nrefits * length(deltas))
+params <- matrix(NA, ncol = npar + 2, nrow = nrefits * length(deltas))
 
 for (M in Ms){  # for each number of bridges
   for (k in seq_along(deltas)) {  # for each delta_max
@@ -63,14 +63,14 @@ for (M in Ms){  # for each number of bridges
                                fixed_sampling = FALSE) 
       
       # store outputs (par + delta_max)
-      params[(k - 1L) * nrefits + i, ] <- c(out$par, delta_max)
-      
+      params[(k - 1L) * nrefits + i, ] <- c(out$par, delta_max, as.numeric(out$time, units = "secs"))
+
     }
   }
   # convert to data.frame 
   as.data.frame(params) %>% 
     # update names 
-    setNames(c(paste0("beta", seq_len(npar - 1L)), "sigma", "delta_max")) %>% 
+    setNames(c(paste0("beta", seq_len(npar - 1L)), "sigma", "delta_max", "time")) %>% 
     # save
     save(file =
          sprintf("case_study/fitted_estimates/sea_lion_deltamax_studyM=%s.Rda",

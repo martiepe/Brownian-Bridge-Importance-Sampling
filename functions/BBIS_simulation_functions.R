@@ -146,6 +146,30 @@ lik_grad_regular <- function(par, cl, n_cov, chol_m,
   }
 }
 
+cached_lik_grad_regular <- function(cl, n_cov, chol_m,
+                                    X, covlist, delta, N, M, mu_x_all, mu_y_all, B, P, cpp_path,
+                                    ...) {
+  last_par <- NULL
+  last_res <- NULL
+  
+  eval_lik_grad <- function(par) {
+    if (is.null(last_par) || length(par) != length(last_par) || any(par != last_par)) {
+      last_par <<- par
+      last_res <<- lik_grad_regular(
+        par, cl, n_cov, chol_m,
+        X, covlist, delta, N, M, mu_x_all, mu_y_all, B, P, cpp_path, ...
+      )
+    }
+    last_res
+  }
+  
+  fn <- function(par) eval_lik_grad(par)$l
+  gr <- function(par) eval_lik_grad(par)$g
+  
+  list(fn = fn, gr = gr)
+}
+
+
 # Generalized likelihood function for iregular sampling interval
 lik_grad_irregular <- function(par, cl,
                                X, covlist, times, ID, dt_max, M, B, P, bilinearGradVec, cpp_path,
@@ -255,6 +279,29 @@ lik_grad_irregular <- function(par, cl,
   list(l = -l_sum, g = c(g_betasum, g_ssum))
 }
 
+cached_lik_grad_irregular <- function(cl, 
+                                           X, covlist, times, ID, dt_max, M, B, P, bilinearGradVec, cpp_path,
+                                           ...) {
+  last_par <- NULL
+  last_res <- NULL
+  
+  eval_lik_grad <- function(par) {
+    if (is.null(last_par) || length(par) != length(last_par) || any(par != last_par)) {
+      last_par <<- par
+      last_res <<- lik_grad_irregular(
+        par, cl, X, covlist, times, ID, dt_max, M, B, P, bilinearGradVec, cpp_path, ...
+      )
+    }
+    last_res
+  }
+  
+  fn <- function(par) eval_lik_grad(par)$l
+  gr <- function(par) eval_lik_grad(par)$g
+  
+  list(fn = fn, gr = gr)
+}
+
+
 # Wrapper function to fit the model
 fit_langevin_bbis <- function(X, covlist, delta, 
                               M = 50,
@@ -270,10 +317,10 @@ fit_langevin_bbis <- function(X, covlist, delta,
   # define likelihood function to use
   if(isTRUE(fixed_sampling)){
     if(is.null(N)) stop("must define number of nodes 'N' if fixed_sampling = TRUE")
-    lik_grad <- lik_grad_regular
+    lik_grad <- cached_lik_grad_regular
   } else if(isFALSE(fixed_sampling)){
     if(is.null(dt_max)) stop("must define number of nodes 'dt_max' if fixed_sampling = FALSE")
-    lik_grad <- lik_grad_irregular
+    lik_grad <- cached_lik_grad_irregular
   } else if(is.null(fixed_sampling)) {
     message("add code to fit_langevin_bbis to check if data is fixed or random interval")
     browser()
@@ -410,35 +457,30 @@ fit_langevin_bbis <- function(X, covlist, delta,
   
   # Set bounds: no bounds on betas, lower bound on sigma
   lower_bounds <- c(rep(-Inf, n_cov), lower_sigma)
-  o <- optim(par = par_init, 
-             fn = function(x) {
-               if (fixed_sampling) {
-                 lik_grad_regular(x, cl, n_cov, chol_m,
-                                  X = X, covlist = covlist, delta = delta, N = N, M = M,
-                                  mu_x_all = mu_x_all, mu_y_all = mu_y_all, B = B, P = P,
-                                  cpp_path = cpp_path)$l
-               } else {
-                 lik_grad_irregular(x, cl,
-                                    X = X, covlist = covlist, times = times, ID = ID, dt_max = dt_max,
-                                    M = M, B = B, P = P, bilinearGradVec = bilinearGradVec,
-                                    cpp_path = cpp_path)$l
-               }
-             }, 
-             gr = function(x) {
-               if (fixed_sampling) {
-                 lik_grad_regular(x, cl, n_cov, chol_m,
-                                  X = X, covlist = covlist, delta = delta, N = N, M = M,
-                                  mu_x_all = mu_x_all, mu_y_all = mu_y_all, B = B, P = P,
-                                  cpp_path = cpp_path)$g
-               } else {
-                 lik_grad_irregular(x, cl,
-                                    X = X, covlist = covlist, times = times, ID = ID, dt_max = dt_max,
-                                    M = M, B = B, P = P, bilinearGradVec = bilinearGradVec,
-                                    cpp_path = cpp_path)$g
-               }
-             }, 
-             method = "L-BFGS-B", 
-             lower = lower_bounds)
+  if (fixed_sampling) {
+    cached <- cached_lik_grad_regular(
+      cl = cl, n_cov = n_cov, chol_m = chol_m,
+      X = X, covlist = covlist, delta = delta, N = N, M = M,
+      mu_x_all = mu_x_all, mu_y_all = mu_y_all, B = B, P = P,
+      cpp_path = cpp_path
+    )
+  } else {
+    cached <- cached_lik_grad_irregular(
+      cl = cl,
+      X = X, covlist = covlist, times = times, ID = ID, dt_max = dt_max,
+      M = M, B = B, P = P, bilinearGradVec = bilinearGradVec,
+      cpp_path = cpp_path
+    )
+  }
+  
+  o <- optim(
+    par = par_init,
+    fn = cached$fn,
+    gr = cached$gr,
+    method = "L-BFGS-B",
+    lower = lower_bounds
+  )
+  
   t_elapsed <- Sys.time() - t_start
   
   # Stop cluster
