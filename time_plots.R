@@ -21,7 +21,7 @@ ggplot(df, aes(x = M, y = time)) +
   ) +
   labs(
     y = "time (seconds)",
-    x = expression(Delta[t])
+    x = "M"
   ) +
   scale_y_log10() +
   theme_bw()
@@ -47,7 +47,7 @@ ggplot(df, aes(x = N, y = time)) +
   ) +
   labs(
     y = "time (seconds)",
-    x = expression(Delta[t])
+    x = "N"
   ) +
   scale_y_log10() +
   theme_bw()
