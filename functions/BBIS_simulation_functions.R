@@ -92,7 +92,7 @@ lik_grad_regular <- function(par, cl, n_cov, chol_m,
     y_samples = sweep(B[2, i, 1:M, 1:N] * gamma, 2, mu_y, "+")
     
     # bridge contribution to likelihood (log-scale)
-    l_k <- log(P[i, 1:M]) + log(gamma) * (2 * N)
+    l_k <- P[i, 1:M] + log(gamma) * (2 * N)
     
     full_x <- cbind(X[i, 1], x_samples, X[i + 1, 1])
     full_y <- cbind(X[i, 2], y_samples, X[i + 1, 2])
@@ -232,7 +232,7 @@ lik_grad_irregular <- function(par, cl,
     y_samples <- sweep(B[[i]][2, 1:M, 1:N] * gamma, 2, mu_y, "+")
     
     #bridge contribtution to likelihood (log-scale)
-    l_k <- log(P[i, 1:M]) + log(gamma) * (2 * N)
+    l_k <- (P[i, 1:M]) + log(gamma) * (2 * N)
     
     #bridges with endpoints
     full_x <- cbind(X[i, 1], x_samples, X[i + 1, 1])
@@ -393,8 +393,8 @@ fit_langevin_bbis <- function(X, covlist, delta,
       B[1, i, 1:M, 1:N] <- mvnfast::rmvn(M, rep(0, N), sigma = chol_m, isChol = TRUE)
       B[2, i, 1:M, 1:N] <- mvnfast::rmvn(M, rep(0, N), sigma = chol_m, isChol = TRUE)
       
-      P[i, 1:M] <- 1/(mvnfast::dmvn(B[1, i, 1:M, 1:N], rep(0, N), sigma = chol_m, isChol = TRUE) * 
-                        mvnfast::dmvn(B[2, i, 1:M, 1:N], rep(0, N), sigma = chol_m, isChol = TRUE))
+      P[i, 1:M] <- -(mvnfast::dmvn(B[1, i, 1:M, 1:N], rep(0, N), sigma = chol_m, isChol = TRUE, log = TRUE) + 
+                        mvnfast::dmvn(B[2, i, 1:M, 1:N], rep(0, N), sigma = chol_m, isChol = TRUE, log =TRUE))
     }
   } else {  # irregular sampling interval
     #brownian bridge array
@@ -422,8 +422,8 @@ fit_langevin_bbis <- function(X, covlist, delta,
           
           B[[i]] = b
           
-          P[i, 1:M] = 1/(mvnfast::dmvn(b[1, 1:M, 1:N], rep(0,N), sigma = chol_m, isChol = TRUE) * 
-                           mvnfast::dmvn(b[2, 1:M, 1:N], rep(0,N), sigma = chol_m, isChol = TRUE))
+          P[i, 1:M] = -(mvnfast::dmvn(b[1, 1:M, 1:N], rep(0,N), sigma = chol_m, isChol = TRUE, log = TRUE) + 
+                           mvnfast::dmvn(b[2, 1:M, 1:N], rep(0,N), sigma = chol_m, isChol = TRUE, log = TRUE))
         }
       } 
     }
