@@ -1,7 +1,7 @@
 # prep workspace ####
 source(here::here("functions/utility_functions.R"))
 sourceDir("functions")
-load_lib(here, dplyr, mvnfast, parallel, terra, ggplot2, viridis, RColorBrewer)
+load_lib(here, dplyr, mvnfast, parallel, terra, ggplot2, viridis, RColorBrewer, tidyr)
 
 # import data ####
 hbfull <- rast(here("case_study/aleut_habitat.grd"))
@@ -26,7 +26,7 @@ hbfull <- hbfull[[c("bathy", "slope", "d2site")]]
 #### fit Langevin BBIS - single fit####
 ncores <- 10
 M <- 25
-dt_max <- 1
+dt_max <- 0.01
 
 # quick single fit
 out <- fit_langevin_bbis(tracks, hbfull, 
@@ -35,6 +35,7 @@ out <- fit_langevin_bbis(tracks, hbfull,
                          dt_units = "hours",
                          ncores = ncores, 
                          fixed_sampling = FALSE) 
+
 
 #### fit Langevin BBIS - dt_max & M refits ####
 # define fitting criteria
@@ -48,8 +49,9 @@ npar <- nlyr(hbfull) + 1
 # add 1 column to track dt_max
 params <- matrix(NA, ncol = npar + 2, nrow = nrefits * length(deltas))
 
+
 for (M in Ms){  # for each number of bridges
-  for (k in seq_along(deltas)) {  # for each delta_max
+  for (k in 22:length(deltas)) {  # for each delta_max
     for (i in 1:nrefits) {  
       delta_max <- deltas[k]
       
@@ -61,27 +63,36 @@ for (M in Ms){  # for each number of bridges
                                dt_units = "hours",
                                ncores = ncores, 
                                fixed_sampling = FALSE) 
-      
       # store outputs (par + delta_max)
       params[(k - 1L) * nrefits + i, ] <- c(out$par, delta_max, as.numeric(out$time, units = "secs"))
 
+      save(params, file = "case_study/fitted_estimates/sea_lion_deltamax_study_inter.Rda")
     }
   }
   # convert to data.frame 
   as.data.frame(params) %>% 
     # update names 
-    setNames(c(paste0("beta", seq_len(npar - 1L)), "sigma", "delta_max", "time")) %>% 
+    setNames(c(paste0("beta", seq_len(npar - 1L)), "gammasq", "delta_max", "time")) %>% 
     # save
     save(file =
          sprintf("case_study/fitted_estimates/sea_lion_deltamax_studyM=%s.Rda",
                  M))
 }
 
+
 #### generate summary plots ####
 # import estimates
-load("case_study/fitted_estimates/sea_lion_deltamax_studyM=25.Rda")
-load("case_study/fitted_estimates/sea_lion_deltamax_studyM=50.Rda")
-load("case_study/fitted_estimates/sea_lion_deltamax_studyM=100.Rda")
+
+objs <- load("case_study/fitted_estimates/sea_lion_deltamax_studyM=25.Rda")
+df25 <- get(objs)
+
+objs <- load("case_study/fitted_estimates/sea_lion_deltamax_studyM=50.Rda")
+df50 <- get(objs)
+
+objs <- load("case_study/fitted_estimates/sea_lion_deltamax_studyM=100.Rda")
+df100 <- get(objs)
+
+
 
 # combine all data
 df_all <- bind_rows(mutate(df25, M = "M=25"),
@@ -95,6 +106,7 @@ df_all <- bind_rows(mutate(df25, M = "M=25"),
     beta3 = "beta[3]", beta4 = "beta[4]",
     gammasq = "gamma^2"))
 
+z = qnorm(0.95)
 
 # summarise estimates (median, sd, & confidence intervals)
 sum_all <- df_all %>%
@@ -142,3 +154,6 @@ plot <- ggplot(sum_all, aes(x = delta_max, y = mu,
 
 # save plot
 ggsave(here("case_study", "SSL_par_est_dmax_M.png"), plot)
+plot
+
+
