@@ -51,7 +51,7 @@ params <- matrix(NA, ncol = npar + 2, nrow = nrefits * length(deltas))
 
 
 for (M in Ms){  # for each number of bridges
-  for (k in 22:length(deltas)) {  # for each delta_max
+  for (k in 1:length(deltas)) {  # for each delta_max
     for (i in 1:nrefits) {  
       delta_max <- deltas[k]
       
@@ -66,7 +66,7 @@ for (M in Ms){  # for each number of bridges
       # store outputs (par + delta_max)
       params[(k - 1L) * nrefits + i, ] <- c(out$par, delta_max, as.numeric(out$time, units = "secs"))
 
-      save(params, file = "case_study/fitted_estimates/sea_lion_deltamax_study_inter.Rda")
+
     }
   }
   # convert to data.frame 
@@ -133,24 +133,69 @@ michelot_par_est <- bind_rows(mutate(michelot_par_est, delta_max = min(sum_all$d
           mutate(michelot_par_est, delta_max = max(sum_all$delta_max)))
 
 # generate plot
-plot <- ggplot(sum_all, aes(x = delta_max, y = mu, 
-                            color = factor(M, levels = c("M=25", "M=50", "M=100")))) +
-  # michelot 2019 estimates
-  geom_ribbon(data = michelot_par_est, aes(x = delta_max, ymin = lo, ymax = hi),
-              fill = "grey20", alpha = 0.1) +
-  geom_line(data = michelot_par_est, aes(delta_max, mu), 
-            col = "grey20", linetype = "dashed", alpha = 0.5) +
+M_levels <- c("M=25", "M=50", "M=100")
+
+plot <- ggplot(sum_all, aes(x = delta_max, y = mu)) +
+  # Michelot 2019 estimates
+  geom_ribbon(
+    data = michelot_par_est,
+    aes(x = delta_max, ymin = lo, ymax = hi),
+    inherit.aes = FALSE,
+    fill = "grey20",
+    alpha = 0.1,
+    show.legend = FALSE
+  ) +
+  geom_line(
+    data = michelot_par_est,
+    aes(x = delta_max, y = mu),
+    inherit.aes = FALSE,
+    colour = "grey20",
+    linetype = "dashed",
+    alpha = 0.5,
+    show.legend = FALSE
+  ) +
+  
   # BBIS estimates
-  geom_point(data = df_all, alpha = 0.15, stroke = NA) +
-  geom_line(aes(linetype = factor(M, levels = c("M=25", "M=50", "M=100"))),
-            linewidth = 0.7) +
-  # design
-  facet_wrap(~ par, scales = "free", labeller = label_parsed) + 
+  geom_point(
+    data = df_all,
+    aes(color = factor(M, levels = M_levels)),
+    alpha = 0.15,
+    stroke = NA,
+    show.legend = FALSE
+  ) +
+  geom_line(
+    aes(
+      color = factor(M, levels = M_levels),
+      linetype = factor(M, levels = M_levels)
+    ),
+    linewidth = 0.7
+  ) +
+  
+  facet_wrap(~ par, scales = "free", labeller = label_parsed) +
   scale_x_log10() +
-  scale_color_brewer(palette = "Dark2") +
-  labs(x = expression(Delta[max]), y = expression(Estimate),
-       color = NULL, linetype = NULL) +
+  
+  # blue -> red, with 25 most sparse and 100 solid
+  scale_color_manual(
+    values = c("M=25" = "#2C7BB6",
+               "M=50" = "#7B3294",
+               "M=100" = "#D7191C"),
+    breaks = M_levels,
+    name = NULL
+  )+
+  scale_linetype_manual(
+    values = c("M=25" = "33",
+               "M=50" = "55",
+               "M=100" = "solid"),
+    breaks = M_levels,
+    name = NULL
+  ) +
+  
+  labs(
+    x = expression(Delta[max]),
+    y = expression(Estimate)
+  ) +
   theme_bw()
+
 
 # save plot
 ggsave(here("case_study", "SSL_par_est_dmax_M.png"), plot)
