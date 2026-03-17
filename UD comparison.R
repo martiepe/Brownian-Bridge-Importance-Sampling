@@ -97,7 +97,11 @@ for (i in 2:ncov) {
   covlist0[[i]] <- resample(covlist0[[i]], covlist0[[1]])
 }
 
-# No cropping
+# Crop covariates to area of interest
+border <- 30
+lim <- c(min(xy[,1])-border,max(xy[,1])+border,min(xy[,2])-border,max(xy[,2])+border)
+covlist0 <- lapply(covlist0, crop, y=extent(lim))
+
 covlist <- lapply(covlist0, raster_to_rhabit)
 
 # =========================================================
@@ -135,6 +139,9 @@ UD_michelot <- rasterToGGplot(estUDrhabit)
 UD$log_val <- log(UD$val)
 UD_michelot$log_val <- log(UD_michelot$val)
 
+ud_michelot_df <- as.data.frame(UD_michelot, xy = TRUE, na.rm = FALSE)
+names(ud_michelot_df)[3] <- "val"
+
 ggtheme <- theme(
   axis.title = element_text(size = 12),
   axis.text = element_text(size = 12),
@@ -151,37 +158,65 @@ lim_logpi <- range(c(UD$log_val, UD_michelot$log_val), na.rm = TRUE)
 # Plots
 # =========================================================
 
-p1 <- make_ud_plot(
-  dat = UD,
-  fill_var = "val",
-  fill_limits = lim_pi,
-  fill_name = expression(pi),
-  theme_obj = ggtheme
-)
+p1 <- ggplot() +
+  geom_raster(data = ud_df, aes(x = x, y = y, fill = val)) +
+  geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
+  scale_fill_viridis_c(
+    trans = "sqrt",
+    limits = lim_pi,
+    name = expression(pi),
+    labels = label_scientific()
+  ) +
+  coord_equal() +
+  labs(x = "Easting (km)", y = "Northing (km)") +
+  ggtheme
 
-p2 <- make_ud_plot(
-  dat = UD,
-  fill_var = "log_val",
-  fill_limits = lim_logpi,
-  fill_name = expression(log(pi)),
-  theme_obj = ggtheme
-)
 
-p3 <- make_ud_plot(
-  dat = UD_michelot,
-  fill_var = "val",
-  fill_limits = lim_pi,
-  fill_name = expression(pi),
-  theme_obj = ggtheme
-)
+p3 <- ggplot() +
+  geom_raster(data = ud_michelot_df, aes(x = x, y = y, fill = val)) +
+  geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
+  scale_fill_viridis_c(
+    trans = "sqrt",
+    limits = lim_pi,
+    name = expression(pi),
+    labels = label_scientific()
+  ) +
+  coord_equal() +
+  labs(x = "Easting (km)", y = "Northing (km)") +
+  ggtheme
 
-p4 <- make_ud_plot(
-  dat = UD_michelot,
-  fill_var = "log_val",
-  fill_limits = lim_logpi,
-  fill_name = expression(log(pi)),
-  theme_obj = ggtheme
-)
 
-grid.arrange(p1, p3)
-grid.arrange(p2, p4)
+p2 <- ggplot() +
+  geom_raster(data = ud_df, aes(x = x, y = y, fill = log_val)) +
+  geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
+  scale_fill_viridis_c(
+    limits = lim_logpi,
+    name = expression(log(pi)),
+    labels = label_scientific()
+  ) +
+  coord_equal() +
+  labs(x = "Easting (km)", y = "Northing (km)") +
+  ggtheme
+
+
+
+p4 <- ggplot() +
+  geom_raster(data = ud_michelot_df, aes(x = x, y = y, fill = log_val)) +
+  geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
+  scale_fill_viridis_c(
+    limits = lim_logpi,
+    name = expression(log(pi)),
+    labels = label_scientific()
+  ) +
+  coord_equal() +
+  labs(x = "Easting (km)", y = "Northing (km)") +
+  ggtheme
+
+
+grid.arrange(p1, p3, ncol = 2)
+grid.arrange(p2, p4, ncol=2)
+
+
+
+
+
