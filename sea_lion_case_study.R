@@ -99,14 +99,12 @@ lik_grad <- function(par, cl){
     delta <- (times[i + 1] - times[i])
     
     if (N == 1L) {
-      ## --- Maruyama one-step shortcut; no IS, no C++ ---
       ## increment
       y <- c(X[i + 1, 1] - X[i, 1],
              X[i + 1, 2] - X[i, 2])
       
-      ## gradients at the start location; bilinearGradVec returns (p, n_obs, 2)
+      ## gradients at the start location
       G_arr <- bilinearGradVec(matrix(X[i, ], nrow = 1), covlist)
-      ## make a 2 x p with rows (df/dx, df/dy)
       G_i <- t(drop(G_arr[, 1, ]))  # 2 x p
       
       ## if any NA/Inf (e.g., boundary), skip this segment consistently
@@ -135,7 +133,7 @@ lik_grad <- function(par, cl){
     }
     
     
-    # brownian bridge endpoints (same construction you had)
+    #brownian bridge endpoints (same construction you had)
     mu_x <- rep(X[i, 1], each = N) + 1:N * rep((X[i + 1, 1] - X[i, 1]), each = N) / (N + 1)
     mu_y <- rep(X[i, 2], each = N) + 1:N * rep((X[i + 1, 2] - X[i, 2]), each = N) / (N + 1)
     
