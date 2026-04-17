@@ -139,17 +139,38 @@ UD_michelot <- rasterToGGplot(estUDrhabit)
 UD$log_val <- log(UD$val)
 UD_michelot$log_val <- log(UD_michelot$val)
 
+ud_df <- as.data.frame(UD, xy = TRUE, na.rm = FALSE)
+names(ud_df)[3] <- "val_ud"
+
 ud_michelot_df <- as.data.frame(UD_michelot, xy = TRUE, na.rm = FALSE)
-names(ud_michelot_df)[3] <- "val"
+names(ud_michelot_df)[3] <- "val_michelot"
+
+# join by grid coordinates
+ratio_df <- left_join(ud_df, ud_michelot_df, by = c("x", "y"))
+
+# ratio and log-ratio
+ratio_df <- ratio_df %>%
+  mutate(
+    ratio = val_ud / val_michelot,
+    log_ratio = log(val_ud / val_michelot)
+  )
+
+lim_lr <- max(abs(ratio_df$log_ratio), na.rm = TRUE)
+
 
 ggtheme <- theme(
-  axis.title = element_text(size = 12),
-  axis.text = element_text(size = 12),
-  legend.title = element_text(size = 15),
-  legend.text = element_text(size = 12),
+  axis.title = element_text(size = 16),
+  axis.text = element_text(size = 16),
+  legend.title = element_text(size = 20),
+  legend.text = element_text(size = 16),
   legend.key.height = unit(2, "line"),
   title = element_text(size = 12)
 )
+
+
+ggtheme <- theme(axis.title = element_text(size=12), axis.text = element_text(size=12),
+                 legend.title = element_text(size=15), legend.text = element_text(size=12),
+                 legend.key.height=unit(2,"line"), title = element_text(size=12))
 
 lim_pi <- range(c(UD$val, UD_michelot$val), na.rm = TRUE)
 lim_logpi <- range(c(UD$log_val, UD_michelot$log_val), na.rm = TRUE)
@@ -158,33 +179,58 @@ lim_logpi <- range(c(UD$log_val, UD_michelot$log_val), na.rm = TRUE)
 # Plots
 # =========================================================
 
-p1 <- ggplot() +
-  geom_raster(data = ud_df, aes(x = x, y = y, fill = val)) +
+
+p_ratio <- ggplot() +
+  geom_raster(data = ratio_df, aes(x = x, y = y, fill = ratio)) +
   geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
   scale_fill_viridis_c(
-    trans = "sqrt",
-    limits = lim_pi,
-    name = expression(pi),
+    trans = "log",
+    name = expression(pi[BBIS] / pi[EM]),
     labels = label_scientific()
   ) +
   coord_equal() +
   labs(x = "Easting (km)", y = "Northing (km)") +
   ggtheme
 
+p_ratio
+
+
+p1 <- ggplot() +
+  geom_raster(data = ud_df, aes(x = x, y = y, fill = val_ud)) +
+  geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
+  scale_fill_viridis_c(
+    trans = "sqrt",
+    limits = lim_pi,
+    begin = 0.3,   # <- key line
+    end = 1,
+    name = expression(pi[BBIS]),
+    labels = label_scientific()
+  ) +
+  coord_equal() +
+  labs(x = "Easting (km)", y = "Northing (km)") +
+  ggtheme
+
+p1
 
 p3 <- ggplot() +
-  geom_raster(data = ud_michelot_df, aes(x = x, y = y, fill = val)) +
+  geom_raster(data = ud_michelot_df, aes(x = x, y = y, fill = val_michelot)) +
   geom_point(data = xydf, aes(x = x, y = y), size = 0.5, color = "grey10") +
   scale_fill_viridis_c(
     trans = "sqrt",
     limits = lim_pi,
-    name = expression(pi),
+    begin = 0.3,   # <- key line
+    end = 1,
+    name = expression(pi[EM]),
     labels = label_scientific()
   ) +
   coord_equal() +
   labs(x = "Easting (km)", y = "Northing (km)") +
   ggtheme
 
+p3
+
+
+grid.arrange(p1, p3, nrow = 1)
 
 p2 <- ggplot() +
   geom_raster(data = ud_df, aes(x = x, y = y, fill = log_val)) +

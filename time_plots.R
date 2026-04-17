@@ -10,13 +10,12 @@ df_summary <- df %>%
   group_by(M) %>%
   summarise(mean_time = mean(time))
 
-
 ggplot(df, aes(x = M, y = time)) +
   geom_violin(fill = "gray") +
   geom_boxplot(width = 0.1) +
   geom_text(
     data = df_summary,
-    aes(x = M, y = Inf, label = round(mean_time, 2)),
+    aes(x = M, y = Inf, label = paste0(round(mean_time, 2), " s")),
     vjust = 1.2
   ) +
   labs(
@@ -24,9 +23,7 @@ ggplot(df, aes(x = M, y = time)) +
     x = "M"
   ) +
   scale_y_log10() +
-  theme_bw(base_size = 14)
-
-
+  theme_bw(base_size = 16)
 
 
 
@@ -36,13 +33,12 @@ df_summary <- df %>%
   group_by(N) %>%
   summarise(mean_time = mean(time))
 
-
 ggplot(df, aes(x = N, y = time)) +
   geom_violin(fill = "gray") +
   geom_boxplot(width = 0.1) +
   geom_text(
     data = df_summary,
-    aes(x = N, y = Inf, label = round(mean_time, 2)),
+    aes(x = N, y = Inf, label = paste0(round(mean_time, 2), " s")),
     vjust = 1.2
   ) +
   labs(
@@ -50,8 +46,7 @@ ggplot(df, aes(x = N, y = time)) +
     x = "N"
   ) +
   scale_y_log10() +
-  theme_bw(base_size = 14)
-
+  theme_bw(base_size = 16)
 
 
 
@@ -61,13 +56,12 @@ df_summary <- df %>%
   group_by(dt) %>%
   summarise(mean_time = mean(time))
 
-
 ggplot(df, aes(x = dt, y = time)) +
   geom_violin(fill = "gray") +
   geom_boxplot(width = 0.1) +
   geom_text(
     data = df_summary,
-    aes(x = dt, y = Inf, label = round(mean_time, 2)),
+    aes(x = dt, y = Inf, label = paste0(round(mean_time, 2), " s")),
     vjust = 1.2
   ) +
   labs(
@@ -75,9 +69,7 @@ ggplot(df, aes(x = dt, y = time)) +
     x = expression(Delta[t])
   ) +
   scale_y_log10() +
-  theme_bw(base_size = 14)
-
-
+  theme_bw(base_size = 16)
 
 
 
@@ -87,13 +79,12 @@ df_summary <- df %>%
   group_by(dt) %>%
   summarise(mean_time = mean(time))
 
-
 ggplot(df, aes(x = dt, y = time)) +
   geom_violin(fill = "gray") +
   geom_boxplot(width = 0.1) +
   geom_text(
     data = df_summary,
-    aes(x = dt, y = Inf, label = round(mean_time, 2)),
+    aes(x = dt, y = Inf, label = paste0(round(mean_time, 2), " s")),
     vjust = 1.2
   ) +
   labs(
@@ -101,4 +92,5 @@ ggplot(df, aes(x = dt, y = time)) +
     x = expression(Delta[t])
   ) +
   scale_y_log10() +
-  theme_bw(base_size = 14)
+  theme_bw(base_size = 16)
+
