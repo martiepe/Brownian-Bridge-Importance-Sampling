@@ -94,47 +94,64 @@ df100 <- get(objs)
 
 
 
-# combine all data
-df_all <- bind_rows(mutate(df25, M = "M=25"),
-                    mutate(df50, M = "M=50"),
-                    mutate(df100, M = "M=100")) %>% 
-  pivot_longer(cols = c(beta1, beta2, beta3, # beta4, 
-                        gammasq), 
-               names_to = "par", values_to = "mu") %>% 
-  mutate(par = dplyr::recode_factor(par,
-    beta1 = "beta[1]", beta2 = "beta[2]", 
-    beta3 = "beta[3]", beta4 = "beta[4]",
-    gammasq = "gamma^2"))
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 
-z = qnorm(0.95)
+# combine all data
+df_all <- bind_rows(
+  mutate(df25, M = "M=25"),
+  mutate(df50, M = "M=50"),
+  mutate(df100, M = "M=100")
+) %>% 
+  pivot_longer(
+    cols = c(beta1, beta2, beta3, gammasq),
+    names_to = "par",
+    values_to = "mu"
+  ) %>% 
+  mutate(
+    par = dplyr::recode_factor(
+      par,
+      beta1   = "beta[1]",
+      beta2   = "beta[2]",
+      beta3   = "beta[3]",
+      gammasq = "gamma^2"
+    )
+  )
+
+z <- qnorm(0.95)
 
 # summarise estimates (median, sd, & confidence intervals)
 sum_all <- df_all %>%
-  dplyr::group_by(par, delta_max, M) %>%
-  dplyr::summarise(
+  group_by(par, delta_max, M) %>%
+  summarise(
     sd = sd(mu),
     mu = median(mu),
     .groups = "drop"
   ) %>% 
-  dplyr::mutate(
+  mutate(
     lo = mu - z * sd,
     hi = mu + z * sd
-  ) 
+  )
 
-# define michelot 2019 estimates
+# Michelot 2019 estimates (same par names!)
 michelot_par_est <- data.frame(
   par = c("beta[1]", "beta[2]", "beta[3]", "gamma^2"),
-  mu = c(1.34*10^-4,    0.76 *10^-3,   -2.06*10^-5, 12.4),
-  lo = c(0.004*10^-4,   -1.74*10^-3,   -3.07*10^-5, 11.9),
-  hi = c(2.72*10^-4,    3.25 *10^-3,   -1.05*10^-5, 12.8)
+  mu = c(1.34e-4, 0.76e-3, -2.06e-5, 12.4),
+  lo = c(0.004e-4, -1.74e-3, -3.07e-5, 11.9),
+  hi = c(2.72e-4, 3.25e-3, -1.05e-5, 12.8)
 )
-# add dumy delta_max for plotting
-michelot_par_est <- bind_rows(mutate(michelot_par_est, delta_max = min(sum_all$delta_max)),
-          mutate(michelot_par_est, delta_max = max(sum_all$delta_max)))
 
-# generate plot
+# add dummy delta_max for plotting
+michelot_par_est <- bind_rows(
+  mutate(michelot_par_est, delta_max = min(sum_all$delta_max)),
+  mutate(michelot_par_est, delta_max = max(sum_all$delta_max))
+)
+
+# levels for legend
 M_levels <- c("M=25", "M=50", "M=100")
 
+# plot
 plot <- ggplot(sum_all, aes(x = delta_max, y = mu)) +
   # Michelot 2019 estimates
   geom_ribbon(
@@ -171,21 +188,30 @@ plot <- ggplot(sum_all, aes(x = delta_max, y = mu)) +
     linewidth = 0.7
   ) +
   
-  facet_wrap(~ par, scales = "free", labeller = label_parsed) +
+  facet_wrap(
+    ~ par,
+    scales = "free",
+    labeller = label_parsed
+  ) +
+  
   scale_x_log10() +
   
-  # blue -> red, with 25 most sparse and 100 solid
+  # blue -> red
   scale_color_manual(
-    values = c("M=25" = "#2C7BB6",
-               "M=50" = "#7B3294",
-               "M=100" = "#D7191C"),
+    values = c(
+      "M=25" = "#2C7BB6",
+      "M=50" = "#7B3294",
+      "M=100" = "#D7191C"
+    ),
     breaks = M_levels,
     name = NULL
-  )+
+  ) +
   scale_linetype_manual(
-    values = c("M=25" = "33",
-               "M=50" = "55",
-               "M=100" = "solid"),
+    values = c(
+      "M=25" = "33",
+      "M=50" = "55",
+      "M=100" = "solid"
+    ),
     breaks = M_levels,
     name = NULL
   ) +
@@ -194,11 +220,7 @@ plot <- ggplot(sum_all, aes(x = delta_max, y = mu)) +
     x = expression(Delta[max]),
     y = expression(Estimate)
   ) +
+  
   theme_bw()
 
-
-# save plot
-ggsave(here("case_study", "SSL_par_est_dmax_M.png"), plot)
 plot
-
-
