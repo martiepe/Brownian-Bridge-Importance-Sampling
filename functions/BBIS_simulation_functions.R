@@ -72,8 +72,7 @@ bilinearGradVec <- function(loc_mat, cov_list) {
 # Generalized likelihood function for fixed/regular sampling interval
 lik_grad_regular <- function(par, cl, n_cov, chol_m,
                              X, covlist, delta, N, M, mu_x_all, mu_y_all, B, P, cpp_path,
-                             ...){  # add ... to absorb arguments
-  # par has length n_cov + 1: first n_cov are beta coefficients, last is variance
+                             ...){  
   
   l = 0
   lik_grad = rep(0, n_cov + 1)
@@ -97,8 +96,6 @@ lik_grad_regular <- function(par, cl, n_cov, chol_m,
     full_x <- cbind(X[i, 1], x_samples, X[i + 1, 1])
     full_y <- cbind(X[i, 2], y_samples, X[i + 1, 2])
     
-    # Call C++ function (log-likelihood version)
-    # res_mat is (n_cov + 2) x M: 1 row for log-weights, n_cov rows for beta gradients, 1 row for variance gradient
     
     res_mat <- compute_log_lik_grad_full_cpp(full_x, full_y, l_k, X, i, par, delta, N, covlist)
     
@@ -146,6 +143,7 @@ lik_grad_regular <- function(par, cl, n_cov, chol_m,
   }
 }
 
+#cached version of likelihood and gradient function
 cached_lik_grad_regular <- function(cl, n_cov, chol_m,
                                     X, covlist, delta, N, M, mu_x_all, mu_y_all, B, P, cpp_path,
                                     ...) {
@@ -173,8 +171,7 @@ cached_lik_grad_regular <- function(cl, n_cov, chol_m,
 # Generalized likelihood function for iregular sampling interval
 lik_grad_irregular <- function(par, cl,
                                X, covlist, times, ID, dt_max, M, B, P, bilinearGradVec, cpp_path,
-                               ...){  # add ... to absorb arguments
-  # par = [beta_1, ..., beta_p, s]
+                               ...){  
   p <- length(par) - 1L
   if (p < 1L) stop("par must be [betas..., s] with at least one covariate.")
   
@@ -187,17 +184,15 @@ lik_grad_irregular <- function(par, cl,
     delta <- as.numeric(times[i + 1] - times[i])
     
     if (N == 1L) {
-      ## --- Maruyama one-step shortcut; no IS, no C++ ---
-      ## increment
       y <- c(X[i + 1, 1] - X[i, 1],
              X[i + 1, 2] - X[i, 2])
       
-      ## gradients at the start location; bilinearGradVec returns (p, n_obs, 2)
+      ## gradients at the start location
       G_arr <- bilinearGradVec(matrix(X[i, ], nrow = 1), covlist)
-      ## make a 2 x p with rows (df/dx, df/dy)
+     
       G_i <- t(drop(G_arr[, 1, ]))  # 2 x p
       
-      ## if any NA/Inf (e.g., boundary), skip this segment consistently
+      
       if (!all(is.finite(G_i))){
         print("inf")
         return(rep(0, p + 2L))
@@ -223,7 +218,7 @@ lik_grad_irregular <- function(par, cl,
     }
     
     
-    # brownian bridge endpoints (same construction you had)
+    # brownian bridge endpoints 
     mu_x <- rep(X[i, 1], each = N) + 1:N * rep((X[i + 1, 1] - X[i, 1]), each = N) / (N + 1)
     mu_y <- rep(X[i, 2], each = N) + 1:N * rep((X[i + 1, 2] - X[i, 2]), each = N) / (N + 1)
     
@@ -238,7 +233,7 @@ lik_grad_irregular <- function(par, cl,
     full_x <- cbind(X[i, 1], x_samples, X[i + 1, 1])
     full_y <- cbind(X[i, 2], y_samples, X[i + 1, 2])
 
-    #likelihood and gradient calculationsusing a c++ function
+    #likelihood and gradient calculations using c++ function
     res_mat <- compute_log_lik_grad_full_cpp(full_x, full_y, l_k, X, i, par, delta, N, covlist)
 
     logw <- res_mat[1, ]
@@ -262,10 +257,8 @@ lik_grad_irregular <- function(par, cl,
 
     
   }
-  # browser()
   results_list <- parLapply(cl, 1:(nrow(X) - 1L), compute)
-  # results_list <- lapply(1:(nrow(X) - 1L), compute)
-  res_mat <- do.call(rbind, results_list)  # (n_seg) x (p+2)
+  res_mat <- do.call(rbind, results_list)  
   
   # fold
   l_sum      <- sum(res_mat[, 1], na.rm = TRUE)
@@ -275,7 +268,6 @@ lik_grad_irregular <- function(par, cl,
   if (!is.finite(l_sum)) {
     return(list(l = 1e10, g = rep(0, p + 1L)))
   }
-  #print(c(par, -l_sum, g_betasum, g_ssum))
   list(l = -l_sum, g = c(g_betasum, g_ssum))
 }
 
@@ -520,89 +512,4 @@ fit_langevin_bbis <- function(X, covlist, delta,
 
 
 
-
-
-
-
-
-
-
-###### For varying time, multiple tracks ##############
-
-
-# # vectorized and paralellized likelihood and gradient function using analytical gradient and no precomputed 
-# # Generalized likelihood function
-# lik_grad <- function(par, cl, n_cov){
-#   # par has length n_cov + 1: first n_cov are beta coefficients, last is variance
-#   
-#   l = 0
-#   lik_grad = rep(0, n_cov + 1)
-#   
-#   #sigma <- diag(delta * par[n_cov + 1] / (N + 1), 2, 2)
-#   
-#   #chol_matrix = gamma * chol_m
-#   
-#   compute <- function(i){
-#     mu_x = rep(X$x[i], each = N[i]) + 1:(N[i]) * rep((X$x[i+1] - X$x[i]), each = N[i]) / (N[i]+1)
-#     mu_y = rep(X$y[i], each = N[i]) + 1:(N[i]) * rep((X$y[i+1] - X$y[i]), each = N[i]) / (N[i]+1)
-#     
-#     
-#     delta_par <- delta[i] * par[n_cov + 1] / (2 * (N[i] + 1))
-#     
-#     gamma = sqrt(par[n_cov + 1])
-#     
-#     
-#     
-#     x_samples = sweep(B[[i]][1, 1:M, 1:(N[i])] * gamma, 2, mu_x, "+")
-#     y_samples = sweep(B[[i]][2, 1:M, 1:(N[i])] * gamma, 2, mu_y, "+")
-#     
-#     L_k = P[i, 1:M] * gamma^(2 * N[i])
-#     
-#     full_x <- cbind(X$x[i], x_samples, X$x[i + 1])
-#     full_y <- cbind(X$y[i], y_samples, X$y[i + 1])
-#     
-#     # Call C++ function
-#     # res_mat is (n_cov + 2) x M: 1 row for likelihood, n_cov rows for beta gradients, 1 row for variance gradient
-#     
-#   
-#     res_mat <- compute_lik_grad_full_cpp(full_x, full_y, L_k, X, i, par, delta[i], N[i], covlist)
-#     
-#     L_k_new <- res_mat[1, ]
-#     loglike_i <- log(sum(L_k_new / M))
-#     
-#     #Compute gradients for all beta coefficients
-#     grad_beta <- numeric(n_cov)
-#     for(j in 1:n_cov) {
-#       grad_beta[j] = -sum(res_mat[j + 1, ] * L_k_new) / (2 * sum(L_k_new))
-#     }
-#     
-#     #Gradient for variance parameter
-#     grad_sigma = -sum(res_mat[n_cov + 2, ] * L_k_new) / (sum(L_k_new))
-#     
-#     return(c(loglike_i, grad_beta, grad_sigma))
-#   }
-#   
-# 
-#   
-#   results <- parLapply(cl, 1:(nrow(X) - 1), compute)
-#   
-#   # Extract results
-#   results_mat <- do.call(rbind, results)
-#   l = sum(results_mat[, 1])
-#   for(j in 1:(n_cov + 1)) {
-#     lik_grad[j] = sum(results_mat[, j + 1])
-#   }
-#   
-#   if(is.nan(l)){
-#     print("NaN")
-#     return(list(l = 1e10, g = rep(0, n_cov + 1)))
-#   }
-#   
-#   if(is.infinite(l)){
-#     print("Inf")
-#     return(list(l = 1e10, g = rep(0, n_cov + 1)))
-#   } else {
-#     return(list(l = -l, g = lik_grad))
-#   }
-# }
 

@@ -50,8 +50,8 @@ npar <- nlyr(hbfull) + 1
 params <- matrix(NA, ncol = npar + 2, nrow = nrefits * length(deltas))
 
 
-for (M in Ms){  # for each number of bridges
-  for (k in 1:length(deltas)) {  # for each delta_max
+for (M in Ms){  
+  for (k in 1:length(deltas)) {  
     for (i in 1:nrefits) {  
       delta_max <- deltas[k]
       
@@ -134,7 +134,7 @@ sum_all <- df_all %>%
     hi = mu + z * sd
   )
 
-# Michelot 2019 estimates (same par names!)
+# Michelot 2019 estimates
 michelot_par_est <- data.frame(
   par = c("beta[1]", "beta[2]", "beta[3]", "gamma^2"),
   mu = c(1.34e-4, 0.76e-3, -2.06e-5, 12.4),
@@ -142,7 +142,7 @@ michelot_par_est <- data.frame(
   hi = c(2.72e-4, 3.25e-3, -1.05e-5, 12.8)
 )
 
-# add dummy delta_max for plotting
+
 michelot_par_est <- bind_rows(
   mutate(michelot_par_est, delta_max = min(sum_all$delta_max)),
   mutate(michelot_par_est, delta_max = max(sum_all$delta_max))
