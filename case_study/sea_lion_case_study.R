@@ -112,10 +112,10 @@ df_all <- bind_rows(
   mutate(
     par = dplyr::recode_factor(
       par,
-      beta1   = "beta[1]",
-      beta2   = "beta[2]",
-      beta3   = "beta[3]",
-      gammasq = "gamma^2"
+      beta1   = '"Bathymetry"',
+      beta2   = '"Slope"',
+      beta3   = '"Distance to SSL sites"',
+      gammasq = 'gamma^2'
     )
   )
 
@@ -136,7 +136,7 @@ sum_all <- df_all %>%
 
 # Michelot 2019 estimates
 michelot_par_est <- data.frame(
-  par = c("beta[1]", "beta[2]", "beta[3]", "gamma^2"),
+  par = c('"Bathymetry"', '"Slope"', '"Distance to SSL sites"', "gamma^2"),
   mu = c(1.34e-4, 0.76e-3, -2.06e-5, 12.4),
   lo = c(0.004e-4, -1.74e-3, -3.07e-5, 11.9),
   hi = c(2.72e-4, 3.25e-3, -1.05e-5, 12.8)
