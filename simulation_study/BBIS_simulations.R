@@ -50,7 +50,7 @@ dist2 <- ((xygrid[,1])^2+(xygrid[,2])^2)/(100)
 covlist[[3]] <- list(x = xgrid, y = ygrid,
                      z = matrix(dist2, length(xgrid), length(ygrid)))
 
-(1/3600)
+
 
 grad = bilinearGradVec(X, covlist)
 times = (0:(nrow(X)-1))*delta
@@ -61,7 +61,7 @@ dim(X)
 length(X)
 # Sim 1: varying delta_t, fixed number of observations -------------------- ####
 print("varying delta_t, fixed number of observations")
-params <- matrix(NA, ncol = 6, nrow = 5*n_sim)
+params <- matrix(NA, ncol = 12, nrow = 5*n_sim)
 sim_var <- c(5, 10, 20, 50, 100)*36
 for (ik in 1:n_sim) {
   for (jk in seq_along(sim_var)) {
@@ -95,6 +95,7 @@ for (ik in 1:n_sim) {
     params[ik*5+jk-5, 8] <- as.numeric((out$counts)[1])
     params[ik*5+jk-5, 9:12] <- c(UD$betaHat, UD$gamma2Hat)
     
+    
   }
   
   df <- data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3], 
@@ -106,7 +107,7 @@ for (ik in 1:n_sim) {
 # Sim 2: varying delta_t, fixed maximum time ------------------------------ ####
 print("varying delta_t, fixed maximum time")
 params <- matrix(NA, ncol = 6, nrow = 5*n_sim)
-sim_var <- c(5, 10, 20, 50, 100)
+sim_var <- c(5, 10, 20, 50, 100)*36
 for (ik in 1:n_sim) {
   for (jk in seq_along(sim_var)) {
     # set up simulation parameters
@@ -121,7 +122,13 @@ for (ik in 1:n_sim) {
     
     # simulating track
     X <- simLMM(delta, speed, covlist, beta_sim, loc0, n_obs_sim)
+    grad = bilinearGradArray(X, covlist)
+    #grad = aperm(bilinearGradArray(X, covlist), c(2, 3, 1))
+    times = (0:(nrow(X)-1))*delta
+    UD = langevinUD(X, times, grad_array = grad)
     
+    
+    X = data.frame(x = X[,1], y = X[,2])
     # fit model
     out <- fit_langevin_bbis(X, covlist, delta, N = N_sim, M = M_sim,
                              ncores = ncores, cpp_path = cpp_path)  
