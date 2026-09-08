@@ -6,9 +6,11 @@ source(here("functions/utility_functions.R"))  # custom general perpose function
 sourceDir("functions")  # custom function to load all functions in folder
 load_lib(mvnfast, parallel, terra, dplyr,
          ambient, Rcpp)  # custom function to install & load packages
-Rcpp::sourceCpp("compute_lik_grad_full.cpp")
-cpp_path <- here("compute_lik_grad_full.cpp")
+cpp_path <- here("functions/compute_lik_grad_full.cpp")
+Rcpp::sourceCpp(cpp_path)
 
+output_path <- "simulation_study/outputs"
+make_path(output_path)
 # Define parameters up front ---------------------------------------------- ####
 set.seed(123)
 
@@ -50,15 +52,6 @@ dist2 <- ((xygrid[,1])^2+(xygrid[,2])^2)/(100)
 covlist[[3]] <- list(x = xgrid, y = ygrid,
                      z = matrix(dist2, length(xgrid), length(ygrid)))
 
-
-
-grad = bilinearGradVec(X, covlist)
-times = (0:(nrow(X)-1))*delta
-UD = langevinUD(X, times, grad_array = grad)
-UD$betaHat
-length(times)
-dim(X)
-length(X)
 # Sim 1: varying delta_t, fixed number of observations -------------------- ####
 print("varying delta_t, fixed number of observations")
 params <- matrix(NA, ncol = 12, nrow = 5*n_sim)
@@ -101,7 +94,7 @@ for (ik in 1:n_sim) {
   df <- data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3], 
                    gammasq = params[,4], dt = as.factor(params[,5]), 
                    time = params[,6])
-  save(df, file = "post-submission/simulation_studies/varying_thin_estimates.Rda")
+  save(df, file = here(output_path,"varying_thin_estimates.Rda"))
 }
 
 # Sim 2: varying delta_t, fixed maximum time ------------------------------ ####
@@ -141,7 +134,7 @@ for (ik in 1:n_sim) {
   df <- data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3],
                    gammasq = params[,4], dt = as.factor(params[,5]), 
                    time = params[,6])
-  save(df,file = "post-submission/simulation_studies/varying_thin_estimates_fixed_Tmax.Rda")
+  save(df,file = here(output_path, "varying_thin_estimates_fixed_Tmax.Rda"))
 }
 
 # Sim 3: varying number of bridges (M) ------------------------------------ ####
@@ -175,7 +168,7 @@ for (ik in 1:n_sim) {
   df = data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3],
                   gammasq = params[,4], M = as.factor(params[, 5]),
                   time = params[, 6])
-  save(df,file = "post-submission/simulation_studies/varying_M_estimates_stochastic likelihood.Rda")
+  save(df,file = here(output_path, "varying_M_estimates_stochastic likelihood.Rda"))
 }
 
 # Sim 4: varying number of nodes (N) -------------------------------------- ####
@@ -208,6 +201,6 @@ for (ik in 1:n_sim) {
   df = data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3], 
                   gammasq = params[,4], N = as.factor(params[,5]), 
                   time = params[,6])
-  save(df, file = "post-submission/simulation_studies/varying_N_estimates.Rda")
+  save(df, file = here(output_path, "varying_N_estimates.Rda"))
 }
     
