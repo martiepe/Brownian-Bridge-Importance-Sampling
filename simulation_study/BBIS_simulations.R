@@ -52,10 +52,26 @@ dist2 <- ((xygrid[,1])^2+(xygrid[,2])^2)/(100)
 covlist[[3]] <- list(x = xgrid, y = ygrid,
                      z = matrix(dist2, length(xgrid), length(ygrid)))
 
+# define result data.frame column names
+col_names <- c(
+  "sim",
+  "method",  # (eiler/bbis)
+  "dt",
+  "Tmax",
+  "delta",
+  "N",
+  "M",
+  "convergence",
+  "iterations",
+  "dt",
+  paste0("beta", seq(length(beta))), 
+  "gammasq"
+)
+
 # Sim 1: varying delta_t, fixed number of observations -------------------- ####
 print("varying delta_t, fixed number of observations")
-params <- matrix(NA, ncol = 12, nrow = 5*n_sim)
-sim_var <- c(5, 10, 20, 50, 100)*36
+sim_var <- c(5, 10, 20, 50, 100) * 36
+sim_results <- data.frame()  # refresh result target
 for (ik in 1:n_sim) {
   for (jk in seq_along(sim_var)) {
     # set up simulation parameters
@@ -70,37 +86,45 @@ for (ik in 1:n_sim) {
     
     # simulating track
     X <- simLMM(delta, speed, covlist, beta_sim, loc0, n_obs_sim)
-    grad = bilinearGradArray(X, covlist)
-    #grad = aperm(bilinearGradArray(X, covlist), c(2, 3, 1))
-    times = (0:(nrow(X)-1))*delta
-    UD = langevinUD(X, times, grad_array = grad)
-
-
-    X = data.frame(x = X[,1], y = X[,2])
-    # fit model
+    
+    # estimate with euler
+    UD <- langevinUD(X, (0:(nrow(X) - 1)) * delta, 
+                     grad_array = bilinearGradArray(X, covlist))
+    ## extract & store euler outputs  
+    sim_results <- data.frame(ik, "euler",   # sim & method
+                              dt_sim, Tmax,  # sim conditions
+                              delta, N_sim, M_sim,   # fit conditions
+                              1, NA,     # convergence, iterations
+                              as.numeric( UD$time, units = "secs"),  # compute time
+                              matrix(c(UD$betaHat, UD$gamma2Hat), nrow = 1)) |> 
+      setNames(col_names) %>% 
+      rbind(sim_results, .)
+    
+    # estimate with bbis
+    X <- data.frame(x = X[, 1], y = X[, 2])
     out <- fit_langevin_bbis(X, covlist, delta, N = N_sim, M = M_sim,
-                      ncores = ncores, fixed_sampling = TRUE)  
-    # store results
-    params[ik*5+jk-5, 1:4] <- out$par
-    params[ik*5+jk-5, 5] <- delta
-    params[ik*5+jk-5, 6] <- as.numeric(out$time, units = "secs")
-    params[ik*5+jk-5, 7] <- out$convergence
-    params[ik*5+jk-5, 8] <- as.numeric((out$counts)[1])
-    params[ik*5+jk-5, 9:12] <- c(UD$betaHat, UD$gamma2Hat)
+                             ncores = ncores, fixed_sampling = TRUE)  
     
-    
+    # extract & store bbis outputs
+    sim_results <- data.frame(ik, "bbis",   # sim, method
+                           dt_sim, Tmax,  # sim conditions
+                           delta, N_sim, M_sim,  # fit conditions
+                           out$convergence,  # convergence
+                           as.numeric((out$counts)[1]),  # iterations
+                           as.numeric(out$time, units = "secs"),  # compute time
+                           matrix(out$par, nrow = 1)) %>%   # estimates
+      setNames(col_names) %>% 
+      rbind(sim_results, .)
   }
-  
-  df <- data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3], 
-                   gammasq = params[,4], dt = as.factor(params[,5]), 
-                   time = params[,6])
-  save(df, file = here(output_path,"varying_thin_estimates.Rda"))
+  write.csv(sim_results, file = here(output_path,"varying_thin_estimates.csv"), 
+            row.names = F)
 }
 
 # Sim 2: varying delta_t, fixed maximum time ------------------------------ ####
 print("varying delta_t, fixed maximum time")
-params <- matrix(NA, ncol = 6, nrow = 5*n_sim)
-sim_var <- c(5, 10, 20, 50, 100)*36
+sim_var <- c(5, 10, 20, 50, 100) * 36
+sim_results <- results_template  # refresh result target
+
 for (ik in 1:n_sim) {
   for (jk in seq_along(sim_var)) {
     # set up simulation parameters
@@ -115,44 +139,73 @@ for (ik in 1:n_sim) {
     
     # simulating track
     X <- simLMM(delta, speed, covlist, beta_sim, loc0, n_obs_sim)
-    grad = bilinearGradArray(X, covlist)
-    #grad = aperm(bilinearGradArray(X, covlist), c(2, 3, 1))
-    times = (0:(nrow(X)-1))*delta
-    UD = langevinUD(X, times, grad_array = grad)
     
+    # estimate with euler
+    UD <- langevinUD(X, (0:(nrow(X) - 1)) * delta, 
+                     grad_array = bilinearGradArray(X, covlist))
+    ## extract & store euler outputs  
+    sim_results <- data.frame(ik, "euler",   # sim & method
+                              dt_sim, Tmax,  # sim conditions
+                              delta, N_sim, M_sim,   # fit conditions
+                              1, NA,     # convergence, iterations
+                              as.numeric( UD$time, units = "secs"),  # compute time
+                              matrix(c(UD$betaHat, UD$gamma2Hat), nrow = 1)) |> 
+      setNames(col_names) %>% 
+      rbind(sim_results, .)
     
-    X = data.frame(x = X[,1], y = X[,2])
     # fit model
+    X = data.frame(x = X[,1], y = X[,2])
     out <- fit_langevin_bbis(X, covlist, delta, N = N_sim, M = M_sim,
                              ncores = ncores, cpp_path = cpp_path)  
-    # store results
-    params[ik*5+jk-5, 1:4] <- out$par
-    params[ik*5+jk-5, 5] <- delta
-    params[ik*5+jk-5, 6] <- as.numeric(out$time, units = "secs")
+    
+    # extract bbis outputs
+    sim_results <- data.frame(ik, "bbis",   # sim, method
+                           dt_sim, Tmax,  # sim conditions
+                           delta, N_sim, M_sim,  # fit conditions
+                           out$convergence,  # convergence
+                           as.numeric((out$counts)[1]),  # iterations
+                           as.numeric(out$time, units = "secs"),  # compute time
+                           matrix(out$par, nrow = 1)) |>   # estimates
+      setNames(col_names) %>% 
+      rbind(sim_results, .)
   }
   # save output
-  df <- data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3],
-                   gammasq = params[,4], dt = as.factor(params[,5]), 
-                   time = params[,6])
-  save(df,file = here(output_path, "varying_thin_estimates_fixed_Tmax.Rda"))
+  write.csv(sim_results, 
+            here(output_path, "varying_thin_estimates_fixed_Tmax.csv"),
+            row.names = FALSE)
 }
 
 # Sim 3: varying number of bridges (M) ------------------------------------ ####
 print("varying M")
-params <- matrix(NA, ncol = 6, nrow = 5*n_sim)
 sim_var <- c(5, 10, 50, 100, 200)
+sim_results <- results_template  # refresh result target
+
 for (ik in 1:n_sim) {
   beta_sim <- beta
   thin_sim <- thin
   dt_sim <- dt
   delta <- dt*thin
-  N <- 49
+  N_sim <- 49
   n_obs_sim <- n_obs
   Tmax <- n_obs_sim*thin_sim*dt_sim
   
   # simulating track
   X <- simLMM(delta, speed, covlist, beta_sim, loc0, n_obs_sim)
   
+  # estimate with euler
+  UD <- langevinUD(X, (0:(nrow(X) - 1)) * delta, 
+                   grad_array = bilinearGradArray(X, covlist))
+  ## extract & store euler outputs  
+  sim_results <- data.frame(ik, "euler",   # sim & method
+                            dt_sim, Tmax,  # sim conditions
+                            delta, N_sim, M_sim,   # fit conditions
+                            1, NA,     # convergence, iterations
+                            as.numeric( UD$time, units = "secs"),  # compute time
+                            matrix(c(UD$betaHat, UD$gamma2Hat), nrow = 1)) |> 
+    setNames(col_names) %>% 
+    rbind(sim_results, .)
+  
+  # loop for BBIS
   for (jk in seq_along(sim_var)) {
     M_sim <- sim_var[jk]
     
@@ -160,47 +213,70 @@ for (ik in 1:n_sim) {
     out <- fit_langevin_bbis(X, covlist, delta, N = N_sim, M = M_sim,
                              ncores = ncores, cpp_path = cpp_path)  
     
-    params[ik*5+jk-5, 1:4] = out$par
-    params[ik*5+jk-5, 5] = M_sim
-    params[ik*5+jk-5,6] = as.numeric(out$time, units = "secs")
+    # extract & store bbis outputs
+    sim_results <- data.frame(ik, "bbis",   # sim, method
+                           dt_sim, Tmax,  # sim conditions
+                           delta, N_sim, M_sim,  # fit conditions
+                           out$convergence,  # convergence
+                           as.numeric((out$counts)[1]),  # iterations
+                           as.numeric(out$time, units = "secs"),  # compute time
+                           matrix(out$par, nrow = 1)) |>   # estimates
+      setNames(col_names) %>% 
+      rbind(sim_results, .)
   }
   # save output
-  df = data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3],
-                  gammasq = params[,4], M = as.factor(params[, 5]),
-                  time = params[, 6])
-  save(df,file = here(output_path, "varying_M_estimates_stochastic likelihood.Rda"))
+  write.csv(sim_results, here(output_path, "varying_M_estimates.csv"),
+            row.names = FALSE)
 }
 
 # Sim 4: varying number of nodes (N) -------------------------------------- ####
 print("varying N")
-params <- matrix(NA, ncol = 6, nrow = 5*n_sim)
-sim_var <- c(4,9,49,99)
+sim_var <- c(4, 9, 49, 99)
+sim_results <- results_template  # refresh result target
+
 for (ik in 1:n_sim) {
+  beta_sim <- beta
+  thin_sim <- thin
+  dt_sim <- dt
+  delta <- dt_sim*thin_sim
+  M_sim <- M
+  n_obs_sim <- n_obs
+  Tmax <- n_obs_sim*thin_sim*dt_sim
+  # simulating track
+  X <- simLMM(delta, speed, covlist, beta_sim, loc0, n_obs_sim)
+  
+  # estimate with euler
+  UD <- langevinUD(X, (0:(nrow(X) - 1)) * delta, 
+                   grad_array = bilinearGradArray(X, covlist))
+  ## extract & store euler outputs  
+  sim_results <- data.frame(ik, "euler",   # sim & method
+                            dt_sim, Tmax,  # sim conditions
+                            delta, N_sim, M_sim,   # fit conditions
+                            1, NA,     # convergence, iterations
+                            as.numeric( as.numeric( UD$time, units = "secs"), units = "secs"),  # compute time
+                            matrix(c(UD$betaHat, UD$gamma2Hat), nrow = 1)) |> 
+    setNames(col_names) %>% 
+    rbind(sim_results, .)
+  
+  # loop for BBIS
   for (jk in seq_along(sim_var)) {
-    beta_sim <- beta
-    thin_sim <- thin
-    dt_sim <- dt
-    delta <- dt_sim*thin_sim
-    N <- sim_var[jk]
-    M_sim <- M
-    n_obs_sim <- n_obs
-    Tmax <- n_obs_sim*thin_sim*dt_sim
-    
-    # simulating track
-    X <- simLMM(delta, speed, covlist, beta_sim, loc0, n_obs_sim)
+    N_sim <- sim_var[jk]
     
     # fit model
     out <- fit_langevin_bbis(X, covlist, delta, N = N_sim, M = M_sim,
                              ncores = ncores, cpp_path = cpp_path)  
-    # store results
-    params[ik*4+jk-4, 1:4] = out$par
-    params[ik*4+jk-4, 5] = N_sim
-    params[ik*4+jk-4,6] = as.numeric(out$time, units = "secs")
+    # extract & store bbis outputs
+    bbis_out <- data.frame(ik, "bbis",   # sim, method
+                           dt_sim, Tmax,  # sim conditions
+                           delta, N_sim, M_sim_sim,  # fit conditions
+                           out$convergence,  # convergence
+                           as.numeric((out$counts)[1]),  # iterations
+                           as.numeric(out$time, units = "secs"),  # compute time
+                           matrix(out$par, nrow = 1)) |>   # estimates
+      setNames(col_names) %>% 
+      rbind(sim_results, .)
   }
   # save output
-  df = data.frame(beta1 = params[,1], beta2 = params[,2], beta3 = params[,3], 
-                  gammasq = params[,4], N = as.factor(params[,5]), 
-                  time = params[,6])
-  save(df, file = here(output_path, "varying_N_estimates.Rda"))
+  write.csv(sim_results, here(output_path, "varying_N_estimates.csv"),
+            row.names = FALSE)
 }
-    
